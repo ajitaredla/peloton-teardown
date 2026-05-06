@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="slides-format" content="viewport" />
+  <title>Peloton Workout Experience</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-bg: #f5f0e6;
+      --color-bg-deep: #ece4d6;
+      --color-surface: #fbf8f1;
+      --color-text: #111111;
+      --color-text-secondary: #363636;
+      --color-text-muted: #6f6a61;
+      --color-accent-1: #111111;
+      --color-accent-2: #f3cf6b;
+      --color-accent-3: #c7e6d0;
+      --color-accent-4: #d9cff4;
+      --color-redish: #ea3323;
+      --color-glass-bg: rgba(255,255,255,0.72);
+      --color-glass-border: rgba(17,17,17,0.10);
+      --color-vignette: rgba(0,0,0,0.06);
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+  </style>
+  <style>
+    :root { --color-bg: #f5f0e6; --color-text: #111111; --glow-color-rgb: 243,207,107; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; background:var(--color-bg); }
+    body { font-family: var(--font-body); color:var(--color-text); overflow:hidden; width:100vw; height:100vh; }
+    .deck { width:100vw; height:100vh; position:relative; }
+    .slide { position:absolute; inset:0; background:var(--color-bg); opacity:0; transform:scale(.97); transition:opacity .6s ease, transform .6s ease; pointer-events:none; overflow:hidden; }
+    .slide.active { opacity:1; transform:scale(1); pointer-events:auto; }
+    .slide > .content { position:relative; z-index:2; width:100%; height:100%; padding:34px 46px 56px 46px; }
+    .nav-controls { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:14px; z-index:100; background:rgba(255,255,255,.68); backdrop-filter: blur(10px); padding:8px 18px; border-radius:999px; border:1px solid rgba(0,0,0,.08); }
+    .nav-btn { width:34px; height:34px; border:none; background:#fff; border-radius:999px; cursor:pointer; font-size:18px; }
+    .slide-dots { display:flex; gap:7px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#bbb2a0; cursor:pointer; }
+    .dot.active { background:#111; transform:scale(1.25); }
+    .slide-counter { font-size:12px; color:#6f6a61; min-width:44px; text-align:center; }
+    .reveal { opacity:0; transform:translateY(16px); }
+    .gradient-mesh { position:absolute; inset:0; z-index:0; overflow:hidden; }
+    .blob { position:absolute; border-radius:999px; filter:blur(80px); opacity:.16; animation:float 14s ease-in-out infinite; }
+    .blob:nth-child(2){ animation-duration:18s; }
+    .blob:nth-child(3){ animation-duration:22s; }
+    .blob:nth-child(4){ animation-duration:16s; }
+    @keyframes float { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(20px,-22px) scale(1.06);} }
+    .slide::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23000000' stroke-opacity='0.035'%3E%3Cpath d='M0 0H180M0 60H180M0 120H180M0 180H180'/%3E%3Cpath d='M0 0V180M60 0V180M120 0V180M180 0V180'/%3E%3C/g%3E%3C/svg%3E"); opacity:.55; }
+    .eyebrow { display:inline-block; border:1.5px solid rgba(17,17,17,.12); border-radius:999px; padding:8px 18px; font-size:16px; background:rgba(255,255,255,.55); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .scribble { position:relative; display:inline-block; }
+    .scribble:after { content:''; position:absolute; left:-4px; right:-4px; bottom:-4px; height:26px; border:3px solid #f0b92b; border-radius:50%; transform:rotate(-4deg); }
+    .card { background:#fffdf8; border:2px solid #111; border-radius:28px; box-shadow:10px 10px 0 #111; }
+    .soft { border:1.5px solid rgba(17,17,17,.10); border-radius:24px; background:rgba(255,255,255,.72); }
+    .num { width:42px; height:42px; border-radius:50%; border:2px solid #111; display:flex; align-items:center; justify-content:center; font-weight:800; }
+    .chip { display:inline-flex; align-items:center; gap:8px; border:1.5px solid rgba(17,17,17,.12); background:#fff; border-radius:999px; padding:9px 14px; font-size:18px; }
+    .mini { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:#6f6a61; font-weight:700; }
+    .bigtitle { font-family: var(--font-display); font-size:68px; line-height:.95; font-weight:800; letter-spacing:-.05em; }
+    .sectiontitle { font-family: var(--font-display); font-size:52px; line-height:.98; font-weight:800; letter-spacing:-.04em; }
+    .two { display:grid; grid-template-columns: 1.05fr .95fr; gap:26px; }
+    .three { display:grid; grid-template-columns: repeat(3,1fr); gap:22px; }
+    .four { display:grid; grid-template-columns: repeat(4,1fr); gap:18px; }
+    .metric { padding:24px 20px; min-height:168px; }
+    .metric .v { font-family:var(--font-display); font-size:52px; line-height:1; font-weight:800; }
+    .sticky { border:2px solid #111; border-radius:20px; padding:18px 18px 16px; box-shadow:8px 8px 0 #111; min-height:196px; }
+    .yellow{ background:#f3cf6b; } .mint{ background:#cfe4d2; } .lav{ background:#ddd3f4; } .white{ background:#fffdf8; }
+    .tablelike { width:100%; border-collapse:separate; border-spacing:0 10px; }
+    .tablelike td { background:#fffdf8; border:1.5px solid rgba(17,17,17,.10); padding:12px 14px; font-size:20px; }
+    .tablelike td:first-child{ border-radius:14px 0 0 14px; font-weight:600;} .tablelike td:last-child{ border-radius:0 14px 14px 0; text-align:right; color:#6f6a61; }
+    .footerline { display:none; }
+  </style>
+</head>
+<body>
+<div class="deck">
+
+  <section class="slide active" data-slide="1">
+    <div class="gradient-mesh">
+      <div class="blob" style="width:280px;height:280px;top:-60px;left:-30px;background:#f3cf6b"></div>
+      <div class="blob" style="width:220px;height:220px;top:70px;right:70px;background:#d9cff4"></div>
+      <div class="blob" style="width:240px;height:240px;bottom:-40px;right:20%;background:#c7e6d0"></div>
+    </div>
+    <div class="content">
+      <div class="reveal" style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div class="eyebrow">Peloton Workout Experience</div>
+        <div class="chip"><span style="width:10px;height:10px;border-radius:50%;background:#ea3323;display:inline-block"></span> Product perspective</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1.1fr .9fr; gap:36px; margin-top:34px; align-items:center;">
+        <div>
+          <div class="bigtitle reveal">Peloton can become a better <span class="scribble">workout coach</span><br>from session one.</div>
+          <p class="reveal" style="font-size:28px; line-height:1.2; color:#363636; max-width:780px; margin-top:24px;">A professional teardown of the first-run workout experience and the highest-priority fixes.</p>
+          <div class="reveal" style="display:flex; gap:14px; margin-top:28px; flex-wrap:wrap;">
+            <div class="chip">5 product gaps</div>
+            <div class="chip">3 priority bets</div>
+            <div class="chip">Teardown journey</div>
+          </div>
+        </div>
+        <div class="card reveal" style="padding:26px; transform:rotate(-1.5deg);">
+          <div class="mini">Point of view</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1; font-weight:800; margin:10px 0 18px;">Professional teardown.</div>
+          <div class="three" style="grid-template-columns:1fr; gap:12px;">
+            <div class="soft" style="padding:14px 16px;"><b>Member first:</b> reduce friction, improve guidance, build trust.</div>
+            <div class="soft" style="padding:14px 16px;"><b>Execution ready:</b> each gap maps to instrumentation or an MVP path.</div>
+            <div class="soft" style="padding:14px 16px;"><b>Platform aware:</b> search, programs, onboarding, and coaching connect.</div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="2">
+    <div class="gradient-mesh"><div class="blob" style="width:220px;height:220px;top:-40px;right:8%;background:#f3cf6b"></div><div class="blob" style="width:180px;height:180px;bottom:0;left:6%;background:#c7e6d0"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Product thesis</div>
+      <div class="two" style="margin-top:22px; align-items:start;">
+        <div>
+          <div class="sectiontitle reveal">The product challenge is <span class="scribble">orchestrating</span> one connected workout experience.</div>
+          <div class="reveal" style="margin-top:22px; font-size:24px; color:#363636; max-width:760px;">Peloton has the ingredients. The opportunity is to make them feel like one guided coaching system.</div>
+        </div>
+        <div class="card reveal" style="padding:20px 22px;">
+          <div class="mini">What the product must do</div>
+          <div class="three" style="grid-template-columns:1fr; gap:12px; margin-top:14px;">
+            <div class="soft" style="padding:14px 16px;"><b>Coach clearly</b><br><span style="color:#6f6a61">Help members know what to do next.</span></div>
+            <div class="soft" style="padding:14px 16px;"><b>Sequence intelligently</b><br><span style="color:#6f6a61">Connect cardio, strength, recovery, and progression.</span></div>
+            <div class="soft" style="padding:14px 16px;"><b>Personalize honestly</b><br><span style="color:#6f6a61">Use the right signal at the right time.</span></div>
+            <div class="soft" style="padding:14px 16px;"><b>Reduce friction</b><br><span style="color:#6f6a61">Earn trust before asking for more data.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="three" style="margin-top:24px;">
+        <div class="sticky yellow reveal"><div class="mini">Product lens</div><div style="font-family:var(--font-display);font-size:30px;line-height:1;font-weight:800;margin-top:10px;">From catalog to coach</div></div>
+        <div class="sticky mint reveal"><div class="mini">Execution lens</div><div style="font-family:var(--font-display);font-size:30px;line-height:1;font-weight:800;margin-top:10px;">From surfaces to journey</div></div>
+        <div class="sticky lav reveal"><div class="mini">Growth lens</div><div style="font-family:var(--font-display);font-size:30px;line-height:1;font-weight:800;margin-top:10px;">From friction to first value</div></div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="3">
+    <div class="gradient-mesh"><div class="blob" style="width:260px;height:260px;top:-20px;right:10%;background:#d9cff4"></div><div class="blob" style="width:220px;height:220px;bottom:-30px;left:0;background:#f3cf6b"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Strategic moment</div>
+      <div class="sectiontitle reveal" style="margin-top:18px; max-width:1050px;">Peloton has the strategy. Parts of the app still reflect the <span class="scribble">older operating model.</span></div>
+      <div class="four" style="margin-top:26px;">
+        <div class="card metric reveal"><div class="v">2M+</div><div style="font-weight:700; font-size:20px; margin-top:8px;">Members strength training</div><div style="margin-top:10px; color:#6f6a61; font-size:17px;">Strength is already mainstream on-platform.</div></div>
+        <div class="card metric reveal"><div class="v">Oct ’25</div><div style="font-weight:700; font-size:20px; margin-top:8px;">Cross-Training relaunch</div><div style="margin-top:10px; color:#6f6a61; font-size:17px;">Hardware story expanded beyond cardio.</div></div>
+        <div class="card metric reveal"><div class="v">AI</div><div style="font-weight:700; font-size:20px; margin-top:8px;">Peloton IQ narrative</div><div style="margin-top:10px; color:#6f6a61; font-size:17px;">Brand promise is coaching and personalization.</div></div>
+        <div class="card metric reveal"><div class="v">2026</div><div style="font-weight:700; font-size:20px; margin-top:8px;">Healthspan thesis</div><div style="margin-top:10px; color:#6f6a61; font-size:17px;">Outcome focus is broader than class consumption.</div></div>
+      </div>
+      <div class="two" style="margin-top:26px; align-items:stretch;">
+        <div class="card reveal" style="padding:24px;">
+          <div class="mini">What that means for Product</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1.05; font-weight:800; margin:10px 0 14px;">The core challenge is sequencing.</div>
+          <div style="font-size:19px; color:#363636; line-height:1.2;">Members need the right next workout, the right recovery, and visible progress.</div>
+        </div>
+        <div class="card reveal" style="padding:24px; background:#111; color:#fffdf8;">
+          <div class="mini" style="color:#d0c7bb;">Headline</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1.05; font-weight:800; margin:10px 0 14px;">Peloton's moat should appear in session one.</div>
+          <div style="font-size:19px; color:#f2eee8; line-height:1.2;">Today, that moat appears too late in the member journey.</div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="4">
+    <div class="gradient-mesh"><div class="blob" style="width:230px;height:230px;top:-20px;left:3%;background:#c7e6d0"></div><div class="blob" style="width:210px;height:210px;bottom:0;right:8%;background:#d9cff4"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Teardown journey</div>
+      <div class="sectiontitle reveal" style="margin-top:18px;">Current workout journey</div>
+      <div class="reveal" style="margin-top:10px; font-size:15px; color:#6f6a61;">Based on first-run teardown, US English flow, May 2026.</div>
+      <div class="four" style="margin-top:24px; grid-template-columns:repeat(4,1fr); gap:16px;">
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">1</div><div style="font-weight:800; font-size:26px;">Paywall</div></div><div style="margin-top:16px; font-size:20px;">Floor and cardio are framed as separate paid worlds.</div><div class="chip" style="margin-top:18px; background:#f9df90;">Siloed</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">2</div><div style="font-weight:800; font-size:26px;">Onboarding</div></div><div style="margin-top:16px; font-size:20px;">Too many asks before one moment of value.</div><div class="chip" style="margin-top:18px; background:#ffd8ba;">Friction</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">3</div><div style="font-weight:800; font-size:26px;">Fitness level</div></div><div style="margin-top:16px; font-size:20px;">Confidence proxy, not capability signal.</div><div class="chip" style="margin-top:18px; background:#fff0ba;">Shallow</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">4</div><div style="font-weight:800; font-size:26px;">Modality pick</div></div><div style="margin-top:16px; font-size:20px;">Broad selection with no sequencing logic.</div><div class="chip" style="margin-top:18px; background:#f9df90;">Unguided</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">5</div><div style="font-weight:800; font-size:26px;">Home</div></div><div style="margin-top:16px; font-size:20px;">Personalization appears before enough signal exists.</div><div class="chip" style="margin-top:18px; background:#ffd3cd;">False AI</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">6</div><div style="font-weight:800; font-size:26px;">Classes</div></div><div style="margin-top:16px; font-size:20px;">Catalog first browsing. Weak next-step coaching.</div><div class="chip" style="margin-top:18px; background:#fff0ba;">Browse-heavy</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">7</div><div style="font-weight:800; font-size:26px;">Search</div></div><div style="margin-top:16px; font-size:20px;">Intent understanding appears weak on workout context.</div><div class="chip" style="margin-top:18px; background:#ffd3cd;">Intent fail</div></div>
+        <div class="card reveal" style="padding:18px;"><div style="display:flex; gap:12px; align-items:center;"><div class="num">8</div><div style="font-weight:800; font-size:26px;">Programs</div></div><div style="margin-top:16px; font-size:20px;">Cross-training appears underrepresented in discovery.</div><div class="chip" style="margin-top:18px; background:#f9df90;">Gap</div></div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="5">
+    <div class="gradient-mesh"><div class="blob" style="width:200px;height:200px;top:-30px;right:10%;background:#f3cf6b"></div><div class="blob" style="width:230px;height:230px;bottom:-30px;left:6%;background:#d9cff4"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">The 5 gaps</div>
+      <div class="sectiontitle reveal" style="margin-top:18px; max-width:980px;">Five product gaps surfaced in the teardown.</div>
+      <div class="three" style="margin-top:28px; grid-template-columns:repeat(5,1fr); gap:14px;">
+        <div class="sticky yellow reveal" style="min-height:290px;"><div class="mini">1</div><div style="font-family:var(--font-display);font-size:28px;line-height:1; font-weight:800; margin-top:12px;">Cold-start personalization</div><div style="margin-top:14px; font-size:20px; line-height:1.2;">The label may overpromise before trust is earned.</div></div>
+        <div class="sticky mint reveal" style="min-height:290px;"><div class="mini">2</div><div style="font-family:var(--font-display);font-size:28px;line-height:1; font-weight:800; margin-top:12px;">Search intent</div><div style="margin-top:14px; font-size:20px; line-height:1.2;">Search appears to rely more on keyword match than workout intent.</div></div>
+        <div class="sticky lav reveal" style="min-height:290px;"><div class="mini">3</div><div style="font-family:var(--font-display);font-size:28px;line-height:1; font-weight:800; margin-top:12px;">Capability onboarding</div><div style="margin-top:14px; font-size:20px; line-height:1.2;">Preference is captured. Capability is only lightly inferred.</div></div>
+        <div class="sticky white reveal" style="min-height:290px;"><div class="mini">4</div><div style="font-family:var(--font-display);font-size:28px;line-height:1; font-weight:800; margin-top:12px;">Activation friction</div><div style="margin-top:14px; font-size:20px; line-height:1.2;">There appears to be too much trust cost before first workout value.</div></div>
+        <div class="sticky yellow reveal" style="min-height:290px;"><div class="mini">5</div><div style="font-family:var(--font-display);font-size:28px;line-height:1; font-weight:800; margin-top:12px;">Cross-training discovery</div><div style="margin-top:14px; font-size:20px; line-height:1.2;">The strategy is multimodal. Programs still appear mostly single modality.</div></div>
+      </div>
+      <div class="card reveal" style="margin-top:24px; padding:22px 24px; background:#111; color:#fffdf8; box-shadow:10px 10px 0 #f3cf6b;">
+        <div class="mini" style="color:#d9d2c9;">Why it matters</div>
+        <div style="font-family:var(--font-display); font-size:32px; line-height:1.05; font-weight:800; margin-top:10px;">All five sit at the intersection of UX, data, and sequencing.</div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="6">
+    <div class="gradient-mesh"><div class="blob" style="width:210px;height:210px;top:-20px;left:10%;background:#c7e6d0"></div><div class="blob" style="width:220px;height:220px;bottom:-40px;right:10%;background:#f3cf6b"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Proof points</div>
+      <div class="two" style="margin-top:18px; align-items:start; grid-template-columns:1fr 1fr; gap:22px;">
+        <div class="card reveal" style="padding:24px; min-height:580px;">
+          <div class="mini">Finding 1</div>
+          <div style="font-family:var(--font-display); font-size:44px; line-height:.98; font-weight:800; margin-top:10px;">Picked for you does not yet feel fully personalized.</div>
+          <div class="soft" style="padding:18px; margin-top:20px; background:#f7f2e7;">
+            <div style="font-size:20px; font-weight:700;">Observed</div>
+            <ul style="font-size:19px; line-height:1.28; color:#363636; margin:10px 0 0 18px;">
+              <li>New user. Zero workout history.</li>
+              <li>Selected cycling, HIIT, and broad modality mix.</li>
+              <li>Carousel leaned recovery and stretch, with duplication.</li>
+            </ul>
+          </div>
+          <div style="margin-top:18px; font-size:24px; line-height:1.22;"><b>PM lens:</b> trust appears to be ahead of signal quality.</div>
+          <div class="chip" style="margin-top:18px; background:#cfe4d2;">Metric: carousel impression to class-start conversion</div><div class="chip" style="margin-top:12px; background:#cfe4d2;">Ship: honest cold start copy, coverage rules, event tracking</div>
+        </div>
+        <div class="card reveal" style="padding:24px; min-height:580px;">
+          <div class="mini">Finding 2</div>
+          <div style="font-family:var(--font-display); font-size:44px; line-height:.98; font-weight:800; margin-top:10px;">Search appears to miss workout intent when members need help most.</div>
+          <div class="soft" style="padding:18px; margin-top:20px; background:#f7f2e7;">
+            <div style="font-size:20px; font-weight:700;">Observed</div>
+            <ul style="font-size:19px; line-height:1.28; color:#363636; margin:10px 0 0 18px;">
+              <li>Query: cool down run.</li>
+              <li>Returned cycling rides rather than recovery content.</li>
+              <li>German content also appeared in a US English account.</li>
+            </ul>
+          </div>
+          <div style="margin-top:18px; font-size:24px; line-height:1.22;"><b>PM lens:</b> discovery appears taxonomy first, not intent first.</div>
+          <div class="chip" style="margin-top:18px; background:#ddd3f4;">Metric: search to class-start conversion by intent</div><div class="chip" style="margin-top:12px; background:#ddd3f4;">Ship: intent taxonomy, semantic retrieval, locale guardrails</div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="7">
+    <div class="gradient-mesh"><div class="blob" style="width:220px;height:220px;top:-20px;right:10%;background:#d9cff4"></div><div class="blob" style="width:240px;height:240px;bottom:-30px;left:4%;background:#c7e6d0"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Gap deep dive</div>
+      <div class="three" style="margin-top:18px; grid-template-columns:repeat(3,1fr); gap:20px;">
+        <div class="card reveal" style="padding:22px; min-height:620px;">
+          <div class="mini">Finding 3</div>
+          <div style="font-family:var(--font-display); font-size:38px; line-height:1; font-weight:800; margin-top:10px;">Onboarding captures preference more than capability.</div>
+          <p style="font-size:20px; line-height:1.22; color:#363636; margin-top:16px;">A 3-level self-rating may not be enough to guide intensity, progression, or recovery well.</p>
+          <div class="chip" style="margin-top:18px; background:#fff0ba;">Metric: workout-start rate after onboarding</div><div class="chip" style="margin-top:12px; background:#f3cf6b;">Bet: optional movement baseline</div>
+          <p style="font-size:19px; line-height:1.26; color:#363636; margin-top:18px;">Peloton can turn movement quality into better programming.</p>
+        </div>
+        <div class="card reveal" style="padding:22px; min-height:620px;">
+          <div class="mini">Finding 4</div>
+          <div style="font-family:var(--font-display); font-size:38px; line-height:1; font-weight:800; margin-top:10px;">First workout value appears to arrive too late.</div>
+          <p style="font-size:20px; line-height:1.22; color:#363636; margin-top:16px;">Health permissions, contacts, watch setup, and ad tracking may create a trust tax before members see meaningful coaching.</p>
+          <div class="chip" style="margin-top:18px; background:#fff0ba;">Metric: trial to first-workout conversion</div><div class="chip" style="margin-top:12px; background:#ffd8ba;">Bet: defer asks until value is earned</div>
+          <p style="font-size:19px; line-height:1.26; color:#363636; margin-top:18px;">This appears to be an activation problem.</p>
+        </div>
+        <div class="card reveal" style="padding:22px; min-height:620px;">
+          <div class="mini">Finding 5</div>
+          <div style="font-family:var(--font-display); font-size:38px; line-height:1; font-weight:800; margin-top:10px;">Cross-training matters strategically, but discovery still looks weak.</div>
+          <p style="font-size:20px; line-height:1.22; color:#363636; margin-top:16px;">Programs still appear to skew single modality, even as Peloton pushes cardio, strength, and wellness.</p>
+          <div class="chip" style="margin-top:18px; background:#fff0ba;">Metric: same-week multimodal completion rate</div><div class="chip" style="margin-top:12px; background:#cfe4d2;">Bet: cross-training as first class pathway</div>
+          <p style="font-size:19px; line-height:1.26; color:#363636; margin-top:18px;">HYROX suggests supply exists. Discovery may be the unlock.</p>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="8">
+    <div class="gradient-mesh"><div class="blob" style="width:220px;height:220px;top:-20px;left:5%;background:#f3cf6b"></div><div class="blob" style="width:220px;height:220px;bottom:-30px;right:8%;background:#d9cff4"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">What I would ship first</div>
+      <div class="sectiontitle reveal" style="margin-top:18px; max-width:980px;">Three bets with high leverage and credible paths to ship.</div>
+      <div class="three" style="margin-top:28px;">
+        <div class="card reveal" style="padding:24px; min-height:470px;">
+          <div class="mini">Bet 1</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1; font-weight:800; margin-top:10px;">Fix cold start recommendations</div>
+          <ul style="margin:18px 0 0 18px; font-size:19px; line-height:1.28; color:#363636;">
+            <li>Honest copy before sufficient signal.</li>
+            <li>At least one onboarding modality match.</li>
+            <li>Deduplication by instructor and modality.</li>
+            <li>Metric: carousel impression to class-start conversion.</li>
+          </ul>
+        </div>
+        <div class="card reveal" style="padding:24px; min-height:470px;">
+          <div class="mini">Bet 2</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1; font-weight:800; margin-top:10px;">Make search understand workout intent</div>
+          <ul style="margin:18px 0 0 18px; font-size:19px; line-height:1.28; color:#363636;">
+            <li>Intent taxonomy: pre, during, post, recovery.</li>
+            <li>Fitness synonym graph and semantic retrieval.</li>
+            <li>Locale filtering and language safe ranking.</li>
+            <li>Metric: search to class-start conversion by intent.</li>
+          </ul>
+        </div>
+        <div class="card reveal" style="padding:24px; min-height:470px; background:#111; color:#fffdf8;">
+          <div class="mini" style="color:#d4ccbf;">Bet 3</div>
+          <div style="font-family:var(--font-display); font-size:34px; line-height:1; font-weight:800; margin-top:10px;">Create a true cross-training path</div>
+          <ul style="margin:18px 0 0 18px; font-size:19px; line-height:1.28; color:#fffdf8;">
+            <li>Programs category for designed cardio and floor sequences.</li>
+            <li>Prominent HYROX and goal based filters.</li>
+            <li>IQ generated weekly pairing MVP.</li>
+            <li>Metric: same-week multimodal completion rate.</li>
+          </ul>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="9">
+    <div class="gradient-mesh"><div class="blob" style="width:220px;height:220px;top:-10px;right:9%;background:#c7e6d0"></div><div class="blob" style="width:220px;height:220px;bottom:-30px;left:9%;background:#f3cf6b"></div></div>
+    <div class="content">
+      <div class="eyebrow reveal">Why I fit</div>
+      <div class="two" style="margin-top:18px; align-items:start; grid-template-columns: .92fr 1.08fr;">
+        <div class="card reveal" style="padding:22px; min-height:610px;">
+          <div class="mini">Differentiators</div>
+          <div style="font-family:var(--font-display); font-size:44px; line-height:.98; font-weight:800; margin-top:10px;">Why this teardown fits my background.</div>
+          <div class="three" style="grid-template-columns:1fr; gap:14px; margin-top:20px;">
+            <div class="soft" style="padding:14px 16px;"><b>Workout domain fluency</b><br><span style="color:#6f6a61">FMS training and athletic background sharpen how I think about progression, mobility, and safety.</span></div>
+            <div class="soft" style="padding:14px 16px;"><b>AI PM execution</b><br><span style="color:#6f6a61">I have built AI products with real data pipelines.</span></div>
+            <div class="soft" style="padding:14px 16px;"><b>Cross functional delivery</b><br><span style="color:#6f6a61">I have worked across product, engineering, UX, policy, and operations.</span></div>
+          </div>
+        </div>
+        <div class="reveal">
+          <div class="three" style="grid-template-columns:1fr 1fr; gap:18px;">
+            <div class="sticky yellow"><div class="mini">0 to 1</div><div style="font-family:var(--font-display); font-size:30px; line-height:1; font-weight:800; margin-top:12px;">Built AI schedule analytics platform</div><div style="margin-top:14px; font-size:20px;">Owned the lifecycle from concept to shipped workflow automation.</div></div>
+            <div class="sticky mint"><div class="mini">Enterprise scale</div><div style="font-family:var(--font-display); font-size:30px; line-height:1; font-weight:800; margin-top:12px;">Unified products across 40 agencies</div><div style="margin-top:14px; font-size:20px;">Drove alignment where policy, delivery, and product all mattered.</div></div>
+            <div class="sticky lav"><div class="mini">Decision quality</div><div style="font-family:var(--font-display); font-size:30px; line-height:1; font-weight:800; margin-top:12px;">Strong operator with quantitative bias</div><div style="margin-top:14px; font-size:20px;">Strong in event tracking, funnels, instrumentation, and tradeoffs.</div></div>
+            <div class="sticky white"><div class="mini">Culture fit</div><div style="font-family:var(--font-display); font-size:30px; line-height:1; font-weight:800; margin-top:12px;">Curious, candid, hands on</div><div style="margin-top:14px; font-size:20px;">Working style fits the team and the product problem.</div></div>
+          </div>
+          <div class="card" style="padding:20px; margin-top:18px; background:#111; color:#fffdf8; box-shadow:10px 10px 0 #c7e6d0;">
+            <div class="mini" style="color:#d9d0c4;">Bottom line</div>
+            <div style="font-family:var(--font-display); font-size:32px; line-height:1.06; font-weight:800; margin-top:10px;">Turn breadth of content into a more guided workout experience.</div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="slide" data-slide="10">
+    <div class="gradient-mesh">
+      <div class="blob" style="width:280px;height:280px;top:-40px;left:8%;background:#f3cf6b"></div>
+      <div class="blob" style="width:220px;height:220px;top:60px;right:8%;background:#d9cff4"></div>
+      <div class="blob" style="width:220px;height:220px;bottom:-20px;left:28%;background:#c7e6d0"></div>
+      <div class="blob" style="width:180px;height:180px;bottom:20px;right:18%;background:#f3cf6b"></div>
+    </div>
+    <div class="content" style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+      <div class="eyebrow reveal">Closing</div>
+      <div class="reveal" style="margin-top:18px; font-size:90px; line-height:.9;">◎</div>
+      <div class="bigtitle reveal" style="margin-top:12px; text-align:center;">Peloton can feel more like a <span class="scribble">coach</span><br>and less like a catalog.</div>
+      <p class="reveal" style="font-size:28px; line-height:1.25; color:#363636; max-width:900px; margin-top:28px;">The opportunity is better guidance, smarter sequencing, and earlier trust.</p>
+      <div class="reveal" style="display:flex; gap:16px; margin-top:28px; flex-wrap:wrap; justify-content:center;">
+        <div class="chip">Guidance</div>
+        <div class="chip">Sequencing</div>
+        <div class="chip">Trust</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="nav-controls">
+  <button class="nav-btn" onclick="changeSlide(-1)">&#8249;</button>
+  <div class="slide-dots" id="dots"></div>
+  <button class="nav-btn" onclick="changeSlide(1)">&#8250;</button>
+  <span class="slide-counter" id="counter">1 / 10</span>
+</div>
+<script>
+let current = 1;
+const total = document.querySelectorAll('.slide').length;
+const dotsContainer = document.getElementById('dots');
+const counter = document.getElementById('counter');
+for (let i = 1; i <= total; i++) { const dot = document.createElement('div'); dot.className = 'dot' + (i === 1 ? ' active' : ''); dot.onclick = () => goToSlide(i); dotsContainer.appendChild(dot); }
+function goToSlide(n){ const prev=document.querySelector('.slide.active'); const next=document.querySelector(`.slide[data-slide="${n}"]`); if(prev) prev.classList.remove('active'); if(next){ next.classList.add('active'); animateSlide(next);} current=n; updateNav(); }
+function changeSlide(dir){ let next=current+dir; if(next<1) next=total; if(next>total) next=1; goToSlide(next); }
+function updateNav(){ document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i+1===current)); counter.textContent = current + ' / ' + total; }
+document.addEventListener('keydown',(e)=>{ if(e.key==='ArrowRight' || e.key===' '){ e.preventDefault(); changeSlide(1);} if(e.key==='ArrowLeft'){ e.preventDefault(); changeSlide(-1);} });
+let touchStartX=0; document.addEventListener('touchstart',(e)=>{ touchStartX=e.touches[0].clientX;}); document.addEventListener('touchend',(e)=>{ const diff=touchStartX-e.changedTouches[0].clientX; if(Math.abs(diff)>50) changeSlide(diff>0?1:-1);});
+function animateSlide(slide){ slide.querySelectorAll('.reveal').forEach((el,i)=>{ el.style.transition='none'; el.style.opacity='0'; el.style.transform='translateY(16px)'; el.offsetHeight; const delay=i*0.06; el.style.transition=`opacity .35s ease ${delay}s, transform .35s ease ${delay}s`; el.style.opacity='1'; el.style.transform='translateY(0px)'; }); }
+animateSlide(document.querySelector('.slide.active'));
+</script>
+</body>
+</html>
